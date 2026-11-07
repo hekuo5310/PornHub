@@ -26,7 +26,8 @@ async function tgFetch(url, init) {
   } finally { clearTimeout(timer); }
 }
 
-async function send(text) {
+/** Send a configured Telegram notification with bounded requests and failure handling. */
+async function sendActual(text) {
   const cfg = getConfig();
   if (!cfg) return;
   try {
@@ -122,3 +123,9 @@ const notify = {
 };
 
 module.exports = { send, sendToUser, notify };
+
+/** Track notification delivery for the Workers request lifetime when applicable. */
+function send(text) {
+  const work = sendActual(text);
+  return process.env.WORKERS_RUNTIME ? require('../../workers/lifetime').track(work) : work;
+}

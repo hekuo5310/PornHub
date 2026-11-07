@@ -8,6 +8,7 @@ function callIfFn(fnName, ...args) {
   return undefined;
 }
 
+/** Activate the requested admin tab and load its current data. */
 function switchTab(name) {
   document.querySelectorAll('.tab-btn').forEach(b => {
     const active = b.dataset.tab === name;
@@ -26,7 +27,7 @@ function switchTab(name) {
   const sel = document.getElementById('tab-select');
   if (sel) sel.value = name;
   location.hash = name;
-  if (name === 'aws') callIfFn('loadAwsConfig');
+  if (name === 'ulzix') callIfFn('loadUlzix');
   if (name === 'ops') callIfFn('loadOpsConfig');
   if (name === 'diary') callIfFn('loadDiary', 1);
   if (name === 'logs') callIfFn('loadLogs', 1);

@@ -31,9 +31,11 @@ function normalizeDuplicateNodeNames(db) {
   }
 }
 
+/** Apply missing SQLite schema changes and normalize legacy data during startup. */
 function runMigrations(db) {
   // ─── nodes 表迁移 ───
   const cols = db.prepare("PRAGMA table_info(nodes)").all().map(c => c.name);
+  if (!cols.includes('ulzix_order_id')) db.exec('ALTER TABLE nodes ADD COLUMN ulzix_order_id INTEGER');
   if (!cols.includes('socks5_host')) {
     db.exec(`
       ALTER TABLE nodes ADD COLUMN socks5_host TEXT;
