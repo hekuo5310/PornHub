@@ -547,7 +547,7 @@ function buildSshConnectOpts(sshInfo) {
 
 async function deployNode(sshInfo, db) {
   const uuid = uuidv4();
-  const port = randomPort();
+  const port = sshInfo.ports?.vless ?? randomPort();
 
   const { displayGeo, isHomeNetwork } = await resolveDeployGeo(sshInfo);
 
@@ -555,6 +555,7 @@ async function deployNode(sshInfo, db) {
   const { name, result } = insertNodeWithGeneratedName(db, (generatedName) => ({
     name: generatedName, host: sshInfo.host, port, uuid,
     ulzix_order_id: sshInfo.ulzix_order_id || null,
+    fixed_port: sshInfo.fixedPorts?.vless,
     ssh_host: sshInfo.host,
     ssh_port: sshInfo.ssh_port || 22,
     ssh_user: sshInfo.ssh_user || 'root',
@@ -843,7 +844,7 @@ async function deploySsNode(sshInfo, db) {
   // 确保数据库已初始化
   if (typeof db.getDb === 'function') db.getDb();
 
-  const port = randomPort();
+  const port = sshInfo.ports?.ss ?? randomPort();
   const ssPassword = crypto.randomBytes(16).toString('base64');
   const ssMethod = sshInfo.ss_method || 'aes-256-gcm';
 
@@ -853,6 +854,7 @@ async function deploySsNode(sshInfo, db) {
     name: generatedName, host: sshInfo.host, port, uuid: '00000000-0000-0000-0000-000000000000',
     protocol: 'ss', ip_version: 6, ss_method: ssMethod, ss_password: ssPassword,
     ulzix_order_id: sshInfo.ulzix_order_id || null,
+    fixed_port: sshInfo.fixedPorts?.ss,
     ssh_host: sshInfo.host,
     ssh_port: sshInfo.ssh_port || 22,
     ssh_user: sshInfo.ssh_user || 'root',
@@ -955,8 +957,8 @@ async function deploySsNode(sshInfo, db) {
 async function deployDualNode(sshInfo, db) {
   if (typeof db.getDb === 'function') db.getDb();
 
-  const vlessPort = randomPort();
-  const ssPort = randomPort(10000, 60000);
+  const vlessPort = sshInfo.ports?.vless ?? randomPort();
+  const ssPort = sshInfo.ports?.ss ?? randomPort(10000, 60000);
   const uuid = uuidv4();
   const ssPassword = crypto.randomBytes(16).toString('base64');
   const ssMethod = sshInfo.ss_method || 'aes-256-gcm';
@@ -970,6 +972,7 @@ async function deployDualNode(sshInfo, db) {
       name: generatedName, host: sshInfo.host, port: vlessPort, uuid,
       protocol: 'vless', ip_version: 4,
       ulzix_order_id: sshInfo.ulzix_order_id || null,
+      fixed_port: sshInfo.fixedPorts?.vless,
       ssh_host: sshInfo.host, ssh_port: sshInfo.ssh_port || 22,
       ssh_user: sshInfo.ssh_user || 'root', ssh_password: sshInfo.ssh_password,
       ssh_key_path: sshInfo.ssh_key_path,
@@ -982,6 +985,7 @@ async function deployDualNode(sshInfo, db) {
       uuid: '00000000-0000-0000-0000-000000000000',
       protocol: 'ss', ip_version: 6, ss_method: ssMethod, ss_password: ssPassword,
       ulzix_order_id: sshInfo.ulzix_order_id || null,
+      fixed_port: sshInfo.fixedPorts?.ss,
       ssh_host: sshInfo.host, ssh_port: sshInfo.ssh_port || 22,
       ssh_user: sshInfo.ssh_user || 'root', ssh_password: sshInfo.ssh_password,
       ssh_key_path: sshInfo.ssh_key_path,
@@ -1172,7 +1176,7 @@ function buildHy2Config(port, users, opts = {}) {
 async function deployHy2Node(sshInfo, db) {
   if (typeof db.getDb === 'function') db.getDb();
 
-  const port = randomPort();
+  const port = sshInfo.ports?.hy2 ?? randomPort();
   const statsSecret = crypto.randomBytes(16).toString('hex');
 
   const { displayGeo, isHomeNetwork: hasSocks5 } = await resolveDeployGeo(sshInfo);
@@ -1187,6 +1191,7 @@ async function deployHy2Node(sshInfo, db) {
     hy2_down_mbps: parseInt(sshInfo.hy2_down_mbps) || 100,
     hy2_stats_secret: statsSecret,
     ulzix_order_id: sshInfo.ulzix_order_id || null,
+    fixed_port: sshInfo.fixedPorts?.hy2,
     ssh_host: sshInfo.host,
     ssh_port: sshInfo.ssh_port || 22,
     ssh_user: sshInfo.ssh_user || 'root',

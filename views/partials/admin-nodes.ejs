@@ -182,6 +182,16 @@
         </div>
       </div>
 
+      <div class="col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <% for (const [key, label] of [['vless', 'VLESS'], ['ss', 'Shadowsocks'], ['hy2', 'Hysteria 2（UDP）']]) { %>
+          <label class="text-gray-300 text-sm">
+            <%= label %> 端口
+            <input class="w-full px-3 py-2" type="number" name="<%= key %>_port" min="1" max="65535" step="1" placeholder="留空自动分配" <%= key === 'vless' ? '' : 'disabled' %>>
+          </label>
+        <% } %>
+        <p class="text-gray-400 text-xs col-span-full">填入端口后将固定使用该端口。仅部署已勾选的协议。</p>
+      </div>
+
       <!-- SS 加密方式（SS 开启时显示） -->
       <div class="col-span-2 hidden" id="ss-method-row">
         <select name="ss_method" class="w-full bg-black/30 text-white px-3 py-2 rounded-xl border border-white/10 text-sm">
@@ -205,7 +215,7 @@
         <span class="text-gray-400">当前模式：</span>
         <span class="text-rose-400" id="deploy-mode-text">仅 VLESS（IPv4）</span>
       </p>
-      <md-filled-button class="bg-rose-600 hover:bg-rose-500 text-white py-2.5 rounded-xl text-sm col-span-2 transition font-medium" id="deploy-btn"> 部署</md-filled-button>
+      <md-filled-button class="bg-rose-600 hover:bg-rose-500 text-white py-2.5 rounded-xl text-sm col-span-2 transition font-medium" id="deploy-btn" type="submit"> 部署</md-filled-button>
     </form>
   </details>
 
@@ -320,6 +330,10 @@ function updateDeployHint() {
   const btn = document.getElementById('deploy-btn');
 
   ssRow.classList.toggle('hidden', !ss);
+  const form = document.getElementById('smart-deploy-form');
+  for (const [protocol, enabled] of Object.entries({ vless, ss, hy2 })) {
+    form.elements[protocol + '_port'].disabled = !enabled;
+  }
 
   const parts = [];
   if (vless) parts.push('VLESS');

@@ -7,6 +7,8 @@ const { emitSyncNode } = require('../../services/configEvents');
 const { parseIntId, isValidHost } = require('../../utils/validators');
 const { asyncHandler } = require('../../utils/asyncHandler');
 
+const { randomPort } = require('../../utils/vless');
+
 const router = express.Router();
 
 function findDuplicateNodeName(name, excludeId = null) {
@@ -31,6 +33,38 @@ router.post('/nodes/deploy-smart', asyncHandler(async (req, res) => {
     return res.redirect('/admin?msg=dup#nodes');
   }
 
+  const vless = enable_vless === 'on';
+  const ss = enable_ss === 'on';
+  const hy2 = enable_hy2 === 'on';
+  if (!vless && !ss && !hy2) return res.redirect('/admin#nodes');
+
+  const ports = {};
+  const fixedPorts = {};
+  const enabledPorts = Object.entries({ vless, ss, hy2 }).filter(([, enabled]) => enabled);
+  const usedPorts = new Set([parseInt(ssh_port) || 22]);
+
+  // Reserve explicit ports before choosing random ports for other protocols.
+  for (const [protocol] of enabledPorts) {
+    const input = req.body[protocol + '_port'];
+    if (input == null || input === '') continue;
+    const port = Number(input);
+    if (!['string', 'number'].includes(typeof input) || !/^\d+$/.test(String(input)) ||
+        !Number.isInteger(port) || port < 1 || port > 65535 || usedPorts.has(port)) {
+      return res.redirect('/admin?msg=invalid_deploy_port#nodes');
+    }
+    ports[protocol] = port;
+    fixedPorts[protocol] = true;
+    usedPorts.add(port);
+  }
+
+  for (const [protocol] of enabledPorts) {
+    if (ports[protocol]) continue;
+    let port;
+    do { port = randomPort(); } while (usedPorts.has(port));
+    ports[protocol] = port;
+    usedPorts.add(port);
+  }
+
   let ulzixOrderId=null;
   if(req.body.ulzix_order_id) {
     ulzixOrderId=parseIntId(req.body.ulzix_order_id);
@@ -42,13 +76,9 @@ router.post('/nodes/deploy-smart', asyncHandler(async (req, res) => {
     } catch {return res.redirect('/admin?msg=ulzix_verify_failed#nodes');}
   }
 
-  const vless = enable_vless === 'on';
-  const ss = enable_ss === 'on';
-  const hy2 = enable_hy2 === 'on';
-  if (!vless && !ss && !hy2) return res.redirect('/admin#nodes');
-
   const sshInfo = {
     ulzix_order_id:ulzixOrderId,
+    ports, fixedPorts,
     host, ssh_port: parseInt(ssh_port) || 22, ssh_user: ssh_user || 'root', ssh_password,
     ss_method: ss_method || 'aes-256-gcm',
     socks5_host: socks5_host || null, socks5_port: parseInt(socks5_port) || 1080,

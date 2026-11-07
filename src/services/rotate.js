@@ -23,12 +23,18 @@ async function rotateCore() {
     const daysSincePort = Math.floor((new Date(today).getTime() - new Date(lastPortDate).getTime()) / 86400000);
     if (daysSincePort >= portRotateDays) {
       for (const node of nodes) {
+        if (node.fixed_port) continue;
         const portMin = parseInt(db.getSetting('rotate_port_min')) || 10000;
         const portMax = parseInt(db.getSetting('rotate_port_max')) || 60000;
-        db.updateNodeAfterRotation(node.id, node.uuid, randomPort(portMin, portMax), node.protocol);
+        const port = randomPort(portMin, portMax);
+        const host = node.ssh_host || node.host;
+        if (nodes.some(peer => (peer.ssh_host || peer.host) === host &&
+            (peer.port === port || peer.ssh_port === port))) continue;
+        db.updateNodeAfterRotation(node.id, node.uuid, port, node.protocol);
+        node.port = port;
+        portRotated = true;
       }
       db.setSetting('last_port_rotate', today);
-      portRotated = true;
     }
   }
 

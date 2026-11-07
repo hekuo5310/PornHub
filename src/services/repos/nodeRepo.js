@@ -43,8 +43,8 @@ function getNodesByIds(ids = []) {
 /** Persist a node with encrypted credentials and its optional verified Ulzix order binding. */
 function addNode(node) {
   const stmt = _getDb().prepare(`
-    INSERT INTO nodes (name, host, port, uuid, protocol, network, security, ssh_host, ssh_port, ssh_user, ssh_password, ssh_key_path, xray_config_path, socks5_host, socks5_port, socks5_user, socks5_pass, is_active, region, remark, is_manual, fail_count, agent_token, ip_version, ss_method, ss_password, hy2_port, hy2_obfs, hy2_sni, hy2_up_mbps, hy2_down_mbps, hy2_stats_secret, ulzix_order_id)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO nodes (name, host, port, uuid, protocol, network, security, ssh_host, ssh_port, ssh_user, ssh_password, ssh_key_path, xray_config_path, socks5_host, socks5_port, socks5_user, socks5_pass, is_active, region, remark, is_manual, fail_count, agent_token, ip_version, ss_method, ss_password, hy2_port, hy2_obfs, hy2_sni, hy2_up_mbps, hy2_down_mbps, hy2_stats_secret, ulzix_order_id, fixed_port)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
   return stmt.run(
     node.name, node.host, node.port, node.uuid,
@@ -68,7 +68,8 @@ function addNode(node) {
     node.hy2_up_mbps || null,
     node.hy2_down_mbps || null,
     encrypt(node.hy2_stats_secret) || null,
-    node.ulzix_order_id || null
+    node.ulzix_order_id || null,
+    node.fixed_port ? 1 : 0
   );
 }
 
