@@ -117,19 +117,20 @@ test('smart deployment forwards fixed ports and rejects invalid or conflicting p
       body: JSON.stringify({
         host: '203.0.113.20', ssh_password: 'test', ssh_port: '2200',
         enable_vless: 'on', enable_ss: 'on', enable_hy2: 'on',
-        vless_port: '14443', hy2_port: '24443', ...fields,
+        vless_port: '14443', hy2_port: '14443', ...fields,
       }),
     });
 
-    for (const fields of [{ ss_port: '14443' }, { ss_port: '2200' }, { ss_port: '65536' }, { ss_port: '123x' }]) {
+    for (const fields of [{ ss_port: '14443' }, { ss_port: '2200' }, { ss_port: '65536' }, { ss_port: '123x' }, { vless_port: '7653' }, { hy2_port: '24443', ss_port: '24443' }]) {
       assert.match((await send(fields)).headers.get('location'), /invalid_deploy_port/);
     }
     assert.equal(calls.length, 0);
     assert.match((await send({})).headers.get('location'), /deploying/);
     assert.equal(calls.length, 2);
     assert.equal(calls[0].ports.vless, 14443);
-    assert.equal(calls[0].ports.hy2, 24443);
-    assert.equal(new Set(Object.values(calls[0].ports)).size, 3);
+    assert.equal(calls[0].ports.hy2, 14443);
+    assert.notEqual(calls[0].ports.ss, 14443);
+    assert.notEqual(calls[0].ports.ss, 2200);
     assert.deepEqual(calls[0].fixedPorts, { vless: true, hy2: true });
     assert.deepEqual(calls[0].ports, calls[1].ports);
   }, { deployDualNode: deploy, deployHy2Node: deploy });

@@ -41,7 +41,14 @@ router.post('/nodes/deploy-smart', asyncHandler(async (req, res) => {
   const ports = {};
   const fixedPorts = {};
   const enabledPorts = Object.entries({ vless, ss, hy2 }).filter(([, enabled]) => enabled);
-  const usedPorts = new Set([parseInt(ssh_port) || 22]);
+  const transports = { vless: ['tcp'], ss: ['tcp', 'udp'], hy2: ['udp'] };
+  const usedPorts = { tcp: new Set([parseInt(ssh_port) || 22]), udp: new Set() };
+  // Hysteria's local traffic stats API also occupies a TCP socket.
+  if (hy2) usedPorts.tcp.add(7653);
+  const conflicts = (protocol, port) => transports[protocol].some(transport => usedPorts[transport].has(port));
+  const reserve = (protocol, port) => {
+    for (const transport of transports[protocol]) usedPorts[transport].add(port);
+  };
 
   // Reserve explicit ports before choosing random ports for other protocols.
   for (const [protocol] of enabledPorts) {
@@ -49,20 +56,20 @@ router.post('/nodes/deploy-smart', asyncHandler(async (req, res) => {
     if (input == null || input === '') continue;
     const port = Number(input);
     if (!['string', 'number'].includes(typeof input) || !/^\d+$/.test(String(input)) ||
-        !Number.isInteger(port) || port < 1 || port > 65535 || usedPorts.has(port)) {
+        !Number.isInteger(port) || port < 1 || port > 65535 || conflicts(protocol, port)) {
       return res.redirect('/admin?msg=invalid_deploy_port#nodes');
     }
     ports[protocol] = port;
     fixedPorts[protocol] = true;
-    usedPorts.add(port);
+    reserve(protocol, port);
   }
 
   for (const [protocol] of enabledPorts) {
     if (ports[protocol]) continue;
     let port;
-    do { port = randomPort(); } while (usedPorts.has(port));
+    do { port = randomPort(); } while (conflicts(protocol, port));
     ports[protocol] = port;
-    usedPorts.add(port);
+    reserve(protocol, port);
   }
 
   let ulzixOrderId=null;

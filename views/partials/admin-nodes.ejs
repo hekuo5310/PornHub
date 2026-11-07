@@ -189,7 +189,7 @@
             <input class="w-full px-3 py-2" type="number" name="<%= key %>_port" min="1" max="65535" step="1" placeholder="留空自动分配" <%= key === 'vless' ? '' : 'disabled' %>>
           </label>
         <% } %>
-        <p class="text-gray-400 text-xs col-span-full">填入端口后将固定使用该端口。仅部署已勾选的协议。</p>
+        <p class="text-gray-400 text-xs col-span-full">填入端口后将固定使用该端口。VLESS（TCP）和 Hysteria 2（UDP）可用同一端口号，Shadowsocks 同时占用 TCP 和 UDP。</p>
       </div>
 
       <!-- SS 加密方式（SS 开启时显示） -->

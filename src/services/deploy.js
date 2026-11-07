@@ -1247,9 +1247,7 @@ async function deployHy2Node(sshInfo, db) {
     // 开放防火墙端口（UDP 是 hy2 的核心）
     await ssh.execCommand(`
       iptables -C INPUT -p udp --dport ${port} -j ACCEPT 2>/dev/null || iptables -I INPUT -p udp --dport ${port} -j ACCEPT
-      iptables -C INPUT -p tcp --dport ${port} -j ACCEPT 2>/dev/null || iptables -I INPUT -p tcp --dport ${port} -j ACCEPT
       ip6tables -C INPUT -p udp --dport ${port} -j ACCEPT 2>/dev/null || ip6tables -I INPUT -p udp --dport ${port} -j ACCEPT
-      ip6tables -C INPUT -p tcp --dport ${port} -j ACCEPT 2>/dev/null || ip6tables -I INPUT -p tcp --dport ${port} -j ACCEPT
       command -v netfilter-persistent &>/dev/null && netfilter-persistent save || true
     `);
 
