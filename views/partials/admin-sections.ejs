@@ -752,20 +752,20 @@
 <div class="tab-panel space-y-4" data-tab="ulzix">
   <div class="glass rounded-2xl p-5 space-y-3">
     <h3 class="text-white font-medium"> Ulzix 集成</h3>
-    <p class="text-gray-400 text-sm">通过服务端 Cookie 访问 FOSSBilling Client API。支持浏览器导出的 Cookie JSON；更新后立即生效，无需重新部署。</p>
+    <p class="text-gray-400 text-sm">使用 Ulzix 客户区个人资料中的 FOSSBilling API Key。更新后立即生效。</p>
     <p class="text-gray-400 text-sm">在此查看订单并绑定节点。开关机、重装、换 IP 等 VPS 扩展操作请到 Ulzix 控制台完成。</p>
-    <a href="https://idc-new.ulzix.com/order" target="_blank" rel="noopener noreferrer" class="text-blue-400">打开 Ulzix 控制台</a>
     <md-filled-button type="button" id="ulzix-refresh" class="glass rounded-xl px-4 py-2 text-white">刷新订单</md-filled-button>
-    <form id="ulzix-cookie-form" class="space-y-2">
-      <label for="ulzix-cookie-json" class="text-gray-300 text-sm">更新登录态 Cookie JSON</label>
-      <textarea id="ulzix-cookie-json" rows="5" maxlength="65536" autocomplete="off" spellcheck="false" required class="w-full bg-black/30 text-white p-3 rounded-xl border border-white/10 text-sm" placeholder="粘贴浏览器导出的 Cookie JSON"></textarea>
-      <p class="text-gray-400 text-sm">登录态加密保存在 D1，仅管理员可更新，保存后不回显。请勿更换 SESSION_SECRET，否则需重新保存 Cookie。</p>
-      <md-filled-button id="ulzix-cookie-save" type="submit" class="glass rounded-xl px-4 py-2 text-white">保存登录态</md-filled-button>
-      <p id="ulzix-cookie-status" class="text-gray-300 text-sm" aria-live="polite"></p>
+    <form id="ulzix-key-form" class="space-y-2">
+      <label for="ulzix-api-key" class="text-gray-300 text-sm">更新客户 API Key</label>
+      <input id="ulzix-api-key" type="password" maxlength="512" autocomplete="off" spellcheck="false" required class="w-full bg-black/30 text-white p-3 rounded-xl border border-white/10 text-sm">
+      <p class="text-gray-400 text-sm">API Key 加密存入 D1，保存后不回显。</p>
+      <md-filled-button id="ulzix-key-save" type="submit" class="glass rounded-xl px-4 py-2 text-white">保存 API Key</md-filled-button>
+      <p id="ulzix-key-status" class="text-gray-300 text-sm" aria-live="polite"></p>
     </form>
     <div class="space-y-3">
-      <h4 class="text-white">购买服务器</h4>
-      <p class="text-gray-400 text-sm">选择分组、商品和周期，先获取购物车报价，再确认购买。余额足够时 Ulzix 可能直接扣款；不足时请完成账单支付。不会自动清空已有购物车。购买期间请勿在 Ulzix 控制台同时修改购物车。</p>
+      <h4 class="text-white">服务器商品</h4>
+      <p class="text-gray-400 text-sm">在 Ulzix 控制台购买后，刷新订单即可在一键部署中选择服务器。</p>
+      <a href="https://idc-new.ulzix.com/order" target="_blank" rel="noopener noreferrer" class="text-blue-400">前往 Ulzix 购买</a>
       <md-filled-button type="button" id="ulzix-catalog-refresh" class="glass rounded-xl px-4 py-2 text-white">加载分组和商品</md-filled-button>
       <div id="ulzix-catalog" class="space-y-3 text-gray-300 text-sm" aria-live="polite"></div>
       <div id="ulzix-purchases" class="space-y-3 text-gray-300 text-sm" aria-live="polite"></div>

@@ -54,7 +54,7 @@ journalctl -u vless-agent -f
 
 ## 9. Ulzix
 
-Cookie JSON 作为服务端 Secret 配置；订单可分页拉取、节点可绑定；过期登录态有明确提示。未核实的 VPS 扩展操作转到 Ulzix 控制台。
+客户 API Key 在 Workers 后台保存到加密 D1；订单可分页拉取、节点可绑定。未核实的 VPS 扩展操作转到 Ulzix 控制台。
 
 ## 10. 备份
 

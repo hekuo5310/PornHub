@@ -19,7 +19,7 @@
 - **健康监控**：Agent WebSocket 长连接 + xray/Hysteria 存活检测 + 资源用量
 
 ### 自动化
-- **Ulzix 集成**：FOSSBilling Client API、Cookie JSON 登录态、订单列表、节点绑定
+- **Ulzix 集成**：FOSSBilling Client API、客户 API Key、订单列表、节点绑定
 - **被墙检测**：Agent 连通性检测与通知；Ulzix 换 IP 需在其控制台操作
 - **密钥轮换**：UUID/订阅 Token 按用户组配置周期重置
 - **不活跃冻结**：TG 30 天未签到自动冻结，签到一次自动解冻
@@ -39,7 +39,7 @@
 
 ## Cloudflare Workers 部署（推荐）
 
-请阅读 [Workers 部署与 Ulzix 配置](./README-WORKERS.md)。包含初始化管理员、Cookie JSON、Agent、备份和 Telegram webhook 配置。
+请阅读 [Workers 部署与 Ulzix 配置](./README-WORKERS.md)。包含初始化管理员、客户 API Key、Agent、备份和 Telegram webhook 配置。
 
 ## 快速部署
 
