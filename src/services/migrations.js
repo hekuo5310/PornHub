@@ -35,6 +35,7 @@ function normalizeDuplicateNodeNames(db) {
 function runMigrations(db) {
   // ─── nodes 表迁移 ───
   const cols = db.prepare("PRAGMA table_info(nodes)").all().map(c => c.name);
+  if (!cols.includes('fixed_port')) db.exec('ALTER TABLE nodes ADD COLUMN fixed_port INTEGER NOT NULL DEFAULT 0');
   if (!cols.includes('ulzix_order_id')) db.exec('ALTER TABLE nodes ADD COLUMN ulzix_order_id INTEGER');
   if (!cols.includes('socks5_host')) {
     db.exec(`
