@@ -19,7 +19,7 @@ function findDuplicateNodeName(name, excludeId = null) {
 }
 
 // 统一部署入口
-router.post('/nodes/deploy-smart', (req, res) => {
+router.post('/nodes/deploy-smart', asyncHandler(async (req, res) => {
   const { host, ssh_port, ssh_user, ssh_password, ss_method, enable_vless, enable_ss, enable_hy2,
           socks5_host, socks5_port, socks5_user, socks5_pass } = req.body;
   if (!host || !ssh_password) return res.redirect('/admin#nodes');
@@ -31,12 +31,24 @@ router.post('/nodes/deploy-smart', (req, res) => {
     return res.redirect('/admin?msg=dup#nodes');
   }
 
+  let ulzixOrderId=null;
+  if(req.body.ulzix_order_id) {
+    ulzixOrderId=parseIntId(req.body.ulzix_order_id);
+    if(!ulzixOrderId) return res.redirect('/admin?msg=invalid_order#nodes');
+    try {
+      const {UlzixClient}=require('../../services/ulzix');
+      const order=await new UlzixClient(await require('../../services/ulzixSettings').read()).call('order/get',{id:ulzixOrderId});
+      if(Number(order?.id)!==ulzixOrderId || order.status!=='active') return res.redirect('/admin?msg=ulzix_not_active#nodes');
+    } catch {return res.redirect('/admin?msg=ulzix_verify_failed#nodes');}
+  }
+
   const vless = enable_vless === 'on';
   const ss = enable_ss === 'on';
   const hy2 = enable_hy2 === 'on';
   if (!vless && !ss && !hy2) return res.redirect('/admin#nodes');
 
   const sshInfo = {
+    ulzix_order_id:ulzixOrderId,
     host, ssh_port: parseInt(ssh_port) || 22, ssh_user: ssh_user || 'root', ssh_password,
     ss_method: ss_method || 'aes-256-gcm',
     socks5_host: socks5_host || null, socks5_port: parseInt(socks5_port) || 1080,
@@ -63,7 +75,7 @@ router.post('/nodes/deploy-smart', (req, res) => {
   }
 
   res.redirect('/admin?msg=deploying#nodes');
-});
+}));
 
 router.post('/nodes/deploy-dual', (req, res) => {
   const { host, ssh_port, ssh_user, ssh_password, ss_method, socks5_host, socks5_port, socks5_user, socks5_pass } = req.body;
@@ -142,13 +154,16 @@ router.post('/nodes/:id/delete', (req, res) => {
   const node = db.getNodeById(id);
   if (!node) return res.redirect('/admin#nodes');
 
-  const stopCmd = 'systemctl stop xray; systemctl disable xray; systemctl stop hysteria-server; systemctl disable hysteria-server; systemctl stop vless-agent; systemctl disable vless-agent';
+  const stopCmd = require('../../utils/serviceCommands').stopServices();
 
   (async () => {
     try {
+      let stopped=false;
       if (agentWs.isAgentOnline(node.id)) {
-        await agentWs.sendCommand(node.id, { type: 'exec', command: stopCmd });
-      } else if (node.ssh_password || node.ssh_key_path) {
+        const result=await agentWs.sendCommand(node.id, { type: 'exec', command: stopCmd });
+        stopped=result.success;
+      }
+      if (!stopped && (node.ssh_password || node.ssh_key_path)) {
         const { NodeSSH } = require('node-ssh');
         const ssh = new NodeSSH();
         const connectOpts = {
