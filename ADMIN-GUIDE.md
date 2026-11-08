@@ -45,9 +45,9 @@
 
 ### Ulzix
 
-- 使用 Secret `ULZIX_COOKIES_JSON` 提供 FOSSBilling 客户区登录态
+- 使用 Secret `ULZIX_API_KEY` 为 Node 部署提供 FOSSBilling 客户 API Key
 - 订单列表、状态、到期时间与节点绑定
-- 登录态失效时明确提示更新 Cookie
+- API Key 失效时提示重新配置
 - VPS 开关机、重装、换 IP 请到 Ulzix 控制台操作，未假定扩展接口
 - Workers 部署、备份和 Telegram 配置请参阅 [部署文档](./README-WORKERS.md)
 

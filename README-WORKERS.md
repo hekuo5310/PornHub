@@ -18,16 +18,16 @@ npm run deploy
 
 - `SESSION_SECRET`：至少 32 字符强随机值，可使用 `openssl rand -hex 32` 生成。它也用于加密敏感数据库字段，部署后应保持稳定。
 - `ADMIN_EMAIL`、`ADMIN_PASSWORD`：首次初始化管理员的邮箱和密码，密码至少 8 字符；已有用户时默认不会重置账号。需要明确更新已有管理员密码时，同时设置新的 `ADMIN_PASSWORD_REVISION` Secret；每个版本只应用一次，`ADMIN_EMAIL` 必须匹配现有管理员。
-- Ulzix Cookie：在后台「Ulzix」粘贴浏览器导出的 Cookie JSON 并保存。使用绑定 `ULZIX_CONFIG` 的 D1 数据库加密保存；更新立即生效，无需重新部署，不回显 Cookie 或写入日志。
+- 在后台「Ulzix」保存客户区个人资料中的 FOSSBilling API Key。Worker 使用绑定 `ULZIX_CONFIG` 的 D1 加密保存，更新立即生效。
 - 在 `wrangler.jsonc` 的 `vars` 中设置 `PANEL_DOMAIN` 为面板域名（不含 `https://`），用于派生 Agent 地址与 Telegram 链接。生产环境绑定自己的域名后再安装 Agent。
 - `wrangler.jsonc` 保留 Worker 名称 `xiaoyizi`。Durable Object 单例名称 `xiaoyizi` 与绑定 `PANEL` 是数据身份，不应随意改动，否则会创建另一套数据库。
-- Ulzix 登录态单独存储于 D1 `xiaoyizi-config`，表结构见 `migrations/0001_integration_credentials.sql`。主业务数据库继续使用 Durable Object 的同步 SQLite 事务；更新 Cookie 不影响节点、用户或备份。其他账号部署时请先创建自己的 D1 并修改 `database_id`。
+- Ulzix API Key单独存储于 D1 `xiaoyizi-config`，表结构见 `migrations/0001_integration_credentials.sql`。主业务数据库继续使用 Durable Object 的同步 SQLite 事务；更新 Key 不影响节点、用户或备份。其他账号部署时请先创建自己的 D1 并修改 `database_id`。
 
 首次打开网站后，使用初始化管理员的邮箱和密码登录。进入后台设置 SMTP、注册规则和节点。
 
 ## GitHub 自动构建部署
 
-已通过 Cloudflare Workers Builds 连接 `hekuo5310/PornHub`。当前监听 `work/cloudflare-ulzix` 的推送。迁移 PR 尚未合并，因此暂不监听仍为旧 Node 版本的 `main`；合并后在构建设置中将生产分支切换为 `main` 即可，仓库连接和部署凭据无需重建。
+Cloudflare Workers Builds 已连接 `hekuo5310/PornHub`，监听 `main` 的推送。
 
 - 构建检查：`npm test && npm run test:worker && npm run check:worker`
 - 发布命令：`npx wrangler deploy`
@@ -56,25 +56,13 @@ npm run check:worker
 固定连接 `https://idc-new.ulzix.com`，使用标准 FOSSBilling Client API：
 
 - `GET /api/guest/product/category_get_list`、`product/get_list`、`product/get`：分组、商品、价格与库存。
-- `POST /api/guest/cart/add_item`、`cart/get`、`cart/remove_item` 和 `/api/client/cart/checkout`：报价、确认购买和取消未提交报价。
+- `POST /api/client/profile/get`：保存前验证 API Key。
 - `POST /api/client/order/get_list`：分页查询自己的订单。
 - `POST /api/client/order/get`：绑定前验证订单归当前登录客户所有。
 
-会话 Cookie 支持以下格式：
+管理后台「Ulzix」使用客户 API Key 读取订单及绑定节点，商品分组和商品走公开 API。FOSSBilling 的购物车依赖会话，在 Ulzix 控制台购买后可从一键部署列表选择已激活的服务器订单。Key 使用 AES-256-GCM 加密，密钥由稳定的 `SESSION_SECRET` 派生。Node 常驻部署可使用环境变量 `ULZIX_API_KEY`。
 
-```json
-[
-  {"name":"PHPSESSID","value":"YOUR_SESSION","domain":"idc-new.ulzix.com","path":"/"}
-]
-```
-
-也支持 `{"cookies":[...]}` 和 `{"COOKIE_NAME":"COOKIE_VALUE"}`。完整导出通常优于只选一个 Cookie；会自动过滤其他域名与已过期 Cookie。若存在 `fossbilling_csrf`，将其同步发送到请求头和请求体；否则使用相同会话读取首页 `meta[name="csrf-token"]`，与 Ulzix 现有 API.js 的方式保持一致。上游跳转不会自动跟随，避免 Cookie 被转发到其他站点。
-
-管理后台「Ulzix」中可查看订单状态、到期时间、服务类型，并将节点绑定到订单。Cookie 过期后直接在此粘贴新的 JSON 并保存。配置接口仅返回状态与更新时间，凭据使用 AES-256-GCM 加密，密钥由稳定的 `SESSION_SECRET` 派生；更换该 Secret 后需重新保存 Cookie。Node 常驻部署仍可使用环境变量 `ULZIX_COOKIES_JSON`，未绑定 D1 时不支持在线修改。
-
-后台支持选择分组、服务器商品和周期，先从上游购物车获取报价，再确认结账。余额足够时上游可能自动扣除余额；未付账单显示支付链接。报价要求现有购物车为空，使用 `multiple=1` 加入一个商品，确认前重新验证账号、购物车内容及金额；不会清空其他购物车内容。请勿在上游控制台同时修改同一会话购物车。需要额外表单的商品会引导到控制台购买。
-
-购买记录持久化在主数据库的 `ulzix_purchases` 表中，重复确认同一记录不会再次结账。结账超时会锁定为待核对，不自动重试；可到控制台核对，再手动关联相同商品的已生成订单。购买生成的订单自动出现在「节点 → 一键部署」列表，只有上游状态为 `active` 才可选择并部署；部署前再次核实订单所有权。部署支持 Debian/Ubuntu + systemd，以及 Alpine + OpenRC（x86_64/aarch64），不需要为默认 Alpine 镜像重装系统。套餐需有足够的内存、磁盘及可达的 SSH 连接。Ulzix 自定义 NAT 模块的 SSH 字段未获证实，当前需在原有部署表单填写 SSH 地址、端口、用户名和密码；所有生成协议节点都会保留订单绑定。恢复旧主数据库快照也会回退购买记录，恢复后须与上游核对历史订单，不能把本地快照当作支付账本。
+历史购买结果仍可查询和核对。只有上游状态为 `active` 的服务器订单可选择并部署，部署前再次核实订单所有权。部署支持 Debian/Ubuntu + systemd，以及 Alpine + OpenRC（x86_64/aarch64），不需要为默认 Alpine 镜像重装系统。套餐需有足够的内存、磁盘及可达的 SSH 连接。Ulzix 自定义 NAT 模块的 SSH 字段未获证实，当前需在原有部署表单填写 SSH 地址、端口、用户名和密码；所有生成协议节点都会保留订单绑定。恢复旧主数据库快照也会回退购买记录，恢复后须与上游核对历史订单，不能把本地快照当作支付账本。
 
 **功能边界：** 标准 FOSSBilling 的订单 API 不等于 VPS 控制接口。目前没有核实 Ulzix 自定义 VPS 模块的开机、关机、重装、换 IP、创建实例接口，因此保留控制台入口，不猜测这些接口，也不会把旧 AWS 实例 ID 当作订单 ID。旧 AWS SDK、账号管理页面、自动换 IP 调用均已移除；旧数据库中的 AWS 列仅用于升级兼容，不再执行操作。OPS 换 IP 端点明确返回 501。
 
@@ -102,4 +90,4 @@ Workers 使用 webhook，不运行长期 polling。设置 Secret `TG_BOT_TOKEN`�
 
 ## 当前验证
 
-137 项 Node 测试通过，Workers 运行时测试与 Wrangler dry-run 通过。真实 Ulzix 登录态、VPS SSH、SMTP 和 Telegram webhook 需要对应凭据才能进行线上联调；未在这些外部服务创建或变更资源。
+137 项 Node 测试通过，Workers 运行时测试与 Wrangler dry-run 通过。真实 Ulzix API Key、VPS SSH、SMTP 和 Telegram webhook 需要对应凭据才能进行线上联调；未在这些外部服务创建或变更资源。
