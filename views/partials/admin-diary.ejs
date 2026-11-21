@@ -1,11 +1,11 @@
-<!-- AI 运营日记 Tab -->
+<!-- 派蒙运维日记 Tab -->
 <div class="tab-panel space-y-4" data-tab="diary">
   <!-- 头部统计 -->
   <div class="glass rounded-2xl p-5">
     <div class="flex items-center justify-between">
       <div>
-        <h3 class="text-white text-sm font-medium"> AI 运营日记</h3>
-        <p class="text-gray-500 text-xs mt-1">Pоrпнub AI每次做的事情都会记录在这里，见证面板的成长 </p>
+        <h3 class="text-white text-sm font-medium"> 派蒙运维日记</h3>
+        <p class="text-gray-500 text-xs mt-1">查看派蒙的巡检与维护记录 </p>
       </div>
       <div class="text-right">
         <div class="text-2xl font-bold text-white" id="diary-total">-</div>
@@ -50,7 +50,7 @@ async function loadDiary(page = 1) {
       timeline.innerHTML = `<div class="text-center py-12">
         <div class="text-4xl mb-3"></div>
         <p class="text-gray-500 text-sm">还没有日记呢</p>
-        <p class="text-gray-600 text-xs mt-1">Pоrпнub AI开始运维后会自动记录～</p>
+        <p class="text-gray-600 text-xs mt-1">暂无派蒙的维护记录。</p>
       </div>`;
     } else {
       let lastDate = '';
@@ -92,7 +92,7 @@ async function loadDiary(page = 1) {
               <div class="text-xs text-gray-200 leading-relaxed whitespace-pre-wrap">${escapeHtml(entry.content)}</div>
               <div class="flex items-center gap-2 mt-1.5">
                 <span class="text-[10px] text-gray-600">${time}</span>
-                <span class="text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-gray-500">${escapeHtml(entry.category)}</span>
+                <span class="text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-gray-500">${entry.category === 'repair' ? '派蒙在攻打你的服务器' : escapeHtml(entry.category)}</span>
               </div>
             </div>
           </div>

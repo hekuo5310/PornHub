@@ -12,16 +12,13 @@ npx wrangler login
 npx wrangler secret put SESSION_SECRET
 npx wrangler secret put ADMIN_EMAIL
 npx wrangler secret put ADMIN_PASSWORD
-npx wrangler d1 migrations apply ULZIX_CONFIG --remote
 npm run deploy
 ```
 
 - `SESSION_SECRET`：至少 32 字符强随机值，可使用 `openssl rand -hex 32` 生成。它也用于加密敏感数据库字段，部署后应保持稳定。
 - `ADMIN_EMAIL`、`ADMIN_PASSWORD`：首次初始化管理员的邮箱和密码，密码至少 8 字符；已有用户时默认不会重置账号。需要明确更新已有管理员密码时，同时设置新的 `ADMIN_PASSWORD_REVISION` Secret；每个版本只应用一次，`ADMIN_EMAIL` 必须匹配现有管理员。
-- 在后台「Ulzix」保存客户区个人资料中的 FOSSBilling API Key。Worker 使用绑定 `ULZIX_CONFIG` 的 D1 加密保存，更新立即生效。
 - 在 `wrangler.jsonc` 的 `vars` 中设置 `PANEL_DOMAIN` 为面板域名（不含 `https://`），用于派生 Agent 地址与 Telegram 链接。生产环境绑定自己的域名后再安装 Agent。
 - `wrangler.jsonc` 保留 Worker 名称 `xiaoyizi`。Durable Object 单例名称 `xiaoyizi` 与绑定 `PANEL` 是数据身份，不应随意改动，否则会创建另一套数据库。
-- Ulzix API Key单独存储于 D1 `xiaoyizi-config`，表结构见 `migrations/0001_integration_credentials.sql`。主业务数据库继续使用 Durable Object 的同步 SQLite 事务；更新 Key 不影响节点、用户或备份。其他账号部署时请先创建自己的 D1 并修改 `database_id`。
 
 首次打开网站后，使用初始化管理员的邮箱和密码登录。进入后台设置 SMTP、注册规则和节点。
 
@@ -33,7 +30,7 @@ Cloudflare Workers Builds 已连接 `hekuo5310/PornHub`，监听 `main` 的推�
 - 发布命令：`npx wrangler deploy`
 - 构建环境：Node.js 22，仓库根目录，启用构建缓存。
 - 任一检查失败则停止发布；其他分支和外部 PR 不部署到生产环境。
-- 部署凭据由 Cloudflare Builds 管理，运行时 Secret 保留在 Worker 中；不把管理员密码或 Ulzix Cookie 写入 GitHub 仓库。
+- 部署凭据由 Cloudflare Builds 管理，运行时 Secret 保留在 Worker 中；不把管理员密码 写入 GitHub 仓库。
 - 后续可在 Cloudflare 的本 Worker「设置 → 构建」中查看日志和修改监听分支。
 
 ## 本地开发与检查
@@ -47,30 +44,15 @@ npm run test:worker
 npm run check:worker
 ```
 
-`test:worker` 使用实际 workerd / Miniflare，验证登录、模板、CSRF、订阅、Agent WebSocket 上报与指令、Cron 去重、快照恢复，以及关闭并重新创建运行时后的数据和会话持久化。测试不访问真实 Ulzix 账号，也不部署生产资源。
+`test:worker` 使用实际 workerd / Miniflare，验证登录、模板、CSRF、订阅、Agent WebSocket 上报与指令、Cron 去重、快照恢复，以及关闭并重新创建运行时后的数据和会话持久化。测试不部署生产资源。
 
 开发时使用 `https://` 访问或保留生产环境的代理协议转发适配；会话 Cookie 始终设置 Secure / HttpOnly。修改模板后需要重新构建，Worker 中不进行运行时模板编译。Node 常驻部署仍可以使用 `npm start`，其部署数据与 Worker 数据各自独立。
-
-## Ulzix 集成
-
-固定连接 `https://idc-new.ulzix.com`，使用标准 FOSSBilling Client API：
-
-- `GET /api/guest/product/category_get_list`、`product/get_list`、`product/get`：分组、商品、价格与库存。
-- `POST /api/client/profile/get`：保存前验证 API Key。
-- `POST /api/client/order/get_list`：分页查询自己的订单。
-- `POST /api/client/order/get`：绑定前验证订单归当前登录客户所有。
-
-管理后台「Ulzix」使用客户 API Key 读取订单及绑定节点，商品分组和商品走公开 API。FOSSBilling 的购物车依赖会话，在 Ulzix 控制台购买后可从一键部署列表选择已激活的服务器订单。Key 使用 AES-256-GCM 加密，密钥由稳定的 `SESSION_SECRET` 派生。Node 常驻部署可使用环境变量 `ULZIX_API_KEY`。
-
-历史购买结果仍可查询和核对。只有上游状态为 `active` 的服务器订单可选择并部署，部署前再次核实订单所有权。部署支持 Debian/Ubuntu + systemd，以及 Alpine + OpenRC（x86_64/aarch64），不需要为默认 Alpine 镜像重装系统。套餐需有足够的内存、磁盘及可达的 SSH 连接。Ulzix 自定义 NAT 模块的 SSH 字段未获证实，当前需在原有部署表单填写 SSH 地址、端口、用户名和密码；所有生成协议节点都会保留订单绑定。恢复旧主数据库快照也会回退购买记录，恢复后须与上游核对历史订单，不能把本地快照当作支付账本。
-
-**功能边界：** 标准 FOSSBilling 的订单 API 不等于 VPS 控制接口。目前没有核实 Ulzix 自定义 VPS 模块的开机、关机、重装、换 IP、创建实例接口，因此保留控制台入口，不猜测这些接口，也不会把旧 AWS 实例 ID 当作订单 ID。旧 AWS SDK、账号管理页面、自动换 IP 调用均已移除；旧数据库中的 AWS 列仅用于升级兼容，不再执行操作。OPS 换 IP 端点明确返回 501。
 
 ## 节点与 Agent
 
 Agent 协议与地址保持 `/ws/agent`，要求节点独立 Token。连接认证、速率限制、断线清理、心跳、命令超时及指令结果的节点归属校验均在服务端执行。普通 WebSocket 连接用于复用现有协议，当前不使用 hibernation；长连接有相应 Durable Object 运行费用。
 
-后台保留 SSH 密码部署与在线 Agent 配置同步。Alpine 使用稳定仓库的 `apk` 安装 Node.js、OpenRC 和运行依赖，不引入 edge 仓库；Xray 26.10.31 与 Hysteria 2.13.0 使用官方静态二进制并核验固定 SHA-256。OpenRC 为三个服务提供开机启动、进程监督与日志；Agent 的状态、重启、自愈和配置同步同时兼容两种 init 系统。Workers 构建适配 ssh2 为 AES-GCM / AES-CTR，移除运行时编译的 Poly1305 模块；不支持在 Workers 中引用你电脑或旧服务器上的 SSH Key 文件路径。远程部署请求会等待后台任务完成后再返回，避免响应结束后安装被取消。真实 SSH / SMTP 连通性取决于目标主机、网络和账号，需使用你的 VPS / 邮件服务进行验收，不能用本地模拟替代。
+后台保留 SSH 密码部署与在线 Agent 配置同步。服务器由管理员维护，节点页按 SSH 地址和端口聚合 VLESS、Hy2 和 SS，保留各协议的独立订阅与设置。Alpine 使用稳定仓库的 `apk` 安装 Node.js、OpenRC 和运行依赖，不引入 edge 仓库；Xray 26.10.31 与 Hysteria 2.13.0 使用官方静态二进制并核验固定 SHA-256。OpenRC 为三个服务提供开机启动、进程监督与日志；Agent 的状态、重启、自愈和配置同步同时兼容两种 init 系统。Workers 构建适配 ssh2 为 AES-GCM / AES-CTR，移除运行时编译的 Poly1305 模块；不支持在 Workers 中引用你电脑或旧服务器上的 SSH Key 文件路径。远程部署请求会等待后台任务完成后再返回，避免响应结束后安装被取消。真实 SSH / SMTP 连通性取决于目标主机、网络和账号，需使用你的 VPS / 邮件服务进行验收，不能用本地模拟替代。
 
 ## 定时任务与备份
 
@@ -90,4 +72,4 @@ Workers 使用 webhook，不运行长期 polling。设置 Secret `TG_BOT_TOKEN`�
 
 ## 当前验证
 
-137 项 Node 测试通过，Workers 运行时测试与 Wrangler dry-run 通过。真实 Ulzix API Key、VPS SSH、SMTP 和 Telegram webhook 需要对应凭据才能进行线上联调；未在这些外部服务创建或变更资源。
+137 项 Node 测试通过，Workers 运行时测试与 Wrangler dry-run 通过。真实 VPS SSH、SMTP 和 Telegram webhook 需要对应凭据才能进行线上联调；未在这些外部服务创建或变更资源。

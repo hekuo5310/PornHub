@@ -32,7 +32,7 @@ curl -s -X POST "$API/diary" \
   -H "$AUTH" \
   -H "Content-Type: application/json" \
   -d '{
-    "content":"🍑 蜜桃酱巡检简报：94/94 节点在线，面板正常，无新告警，动作：无。",
+    "content":"🍑 派蒙巡检简报：94/94 节点在线，面板正常，无新告警，动作：无。",
     "category":"patrol",
     "mood":"🍑"
   }'

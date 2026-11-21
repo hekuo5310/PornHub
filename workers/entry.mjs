@@ -17,7 +17,6 @@ export class Panel extends DurableObject {
       if (!env.SESSION_SECRET || env.SESSION_SECRET.length < 32) throw new Error('Set SESSION_SECRET (at least 32 characters)');
       for (const [key, value] of Object.entries(env)) if (typeof value === 'string') process.env[key] = value;
       configureStorage(ctx.storage);
-      require('../src/services/ulzixSettings').configure(env.ULZIX_CONFIG, env.SESSION_SECRET);
       for (const [file, content] of Object.entries(files)) {
         fs.mkdirSync(path.dirname(file), { recursive: true }); fs.writeFileSync(file, content);
       }

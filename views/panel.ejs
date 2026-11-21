@@ -537,7 +537,7 @@
             '<p class="pb-diary-content">' + esc(e.content) + '</p></div>'
           ).join('');
         } else {
-          diaryDiv.innerHTML = '<p class="pb-diary-empty">Pоrпнub AI还没有巡检记录~</p>';
+          diaryDiv.innerHTML = '<p class="pb-diary-empty">派蒙还没有巡检记录~</p>';
         }
       }
     }
@@ -613,7 +613,7 @@
     setInterval(tickInviteCountdown, 30000);
   </script>
 
-  <!--  Pоrпнub AI浮动气泡 -->
+  <!--  派蒙浮动气泡 -->
   <style nonce="<%= nonce %>">
     @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
     #peach-bubble{position:fixed;bottom:max(20px,env(safe-area-inset-bottom,0px) + 12px);right:max(16px,env(safe-area-inset-right,0px) + 8px);z-index:999;width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#f43f5e,#f97316);display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 20px rgba(244,63,94,0.4);font-size:24px;transition:all .3s}
@@ -642,16 +642,16 @@
     .pb-emoji{font-size:20px}
     @media(max-width:400px){.sub-btn-row .bg-rose-600,.sub-btn-row .bg-indigo-600{padding-left:0.75rem;padding-right:0.75rem;font-size:0.75rem}}
   </style>
-  <div id="peach-bubble" role="button" aria-label="Pоrпнub AI状态面板" tabindex="0">
+  <div id="peach-bubble" role="button" aria-label="派蒙状态面板" tabindex="0">
     AI
     <span class="dot" aria-hidden="true"></span>
   </div>
 
-  <!-- Pоrпнub AI展开面板 -->
+  <!-- 派蒙展开面板 -->
   <div id="peach-panel">
     <div class="pb-header">
       <span class="pb-emoji">AI</span>
-      <span class="pb-title">Pоrпнub AI守护中</span>
+      <span class="pb-title">派蒙运维助手</span>
       <span class="pb-dot"></span>
     </div>
     <div class="pb-section-title"> 节点状态</div>
@@ -688,7 +688,7 @@
     </div>
   </div>
 
-  <!-- Pоrпнub AI数据加载 -->
+  <!-- 派蒙数据加载 -->
   <script nonce="<%= nonce %>">
   function togglePeachPanel(e) {
     if (e) e.stopPropagation();
@@ -712,7 +712,7 @@
 
   <!-- 品牌标识 -->
   <div style="text-align:center;padding:16px 0 24px;color:#4b5563;font-size:11px">
-    由  Pоrпнub AI AI 无人值守运维
+    由  派蒙负责运维
   </div>
 
 <%- include('partials/foot') %>

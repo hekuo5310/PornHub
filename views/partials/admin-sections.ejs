@@ -749,32 +749,6 @@
     </div>
   </div>
 </div>
-<div class="tab-panel space-y-4" data-tab="ulzix">
-  <div class="glass rounded-2xl p-5 space-y-3">
-    <h3 class="text-white font-medium"> Ulzix 集成</h3>
-    <p class="text-gray-400 text-sm">使用 Ulzix 客户区个人资料中的 FOSSBilling API Key。更新后立即生效。</p>
-    <p class="text-gray-400 text-sm">在此查看订单并绑定节点。开关机、重装、换 IP 等 VPS 扩展操作请到 Ulzix 控制台完成。</p>
-    <md-filled-button type="button" id="ulzix-refresh" class="glass rounded-xl px-4 py-2 text-white">刷新订单</md-filled-button>
-    <form id="ulzix-key-form" class="space-y-2">
-      <label for="ulzix-api-key" class="text-gray-300 text-sm">更新客户 API Key</label>
-      <input id="ulzix-api-key" type="password" maxlength="512" autocomplete="off" spellcheck="false" required class="w-full bg-black/30 text-white p-3 rounded-xl border border-white/10 text-sm">
-      <p class="text-gray-400 text-sm">API Key 加密存入 D1，保存后不回显。</p>
-      <md-filled-button id="ulzix-key-save" type="submit" class="glass rounded-xl px-4 py-2 text-white">保存 API Key</md-filled-button>
-      <p id="ulzix-key-status" class="text-gray-300 text-sm" aria-live="polite"></p>
-    </form>
-    <div class="space-y-3">
-      <h4 class="text-white">服务器商品</h4>
-      <p class="text-gray-400 text-sm">在 Ulzix 控制台购买后，刷新订单即可在一键部署中选择服务器。</p>
-      <a href="https://idc-new.ulzix.com/order" target="_blank" rel="noopener noreferrer" class="text-blue-400">前往 Ulzix 购买</a>
-      <md-filled-button type="button" id="ulzix-catalog-refresh" class="glass rounded-xl px-4 py-2 text-white">加载分组和商品</md-filled-button>
-      <div id="ulzix-catalog" class="space-y-3 text-gray-300 text-sm" aria-live="polite"></div>
-      <div id="ulzix-purchases" class="space-y-3 text-gray-300 text-sm" aria-live="polite"></div>
-    </div>
-    <div id="ulzix-orders" class="text-gray-300 text-sm" aria-live="polite"></div>
-    <div id="ulzix-nodes" class="space-y-3"></div>
-  </div>
-</div>
-
 <script nonce="<%= nonce %>">
 (() => {
   document.querySelectorAll('.js-log-type-btn[data-logtype]').forEach((btn) => {

@@ -15,7 +15,7 @@
 - 编辑节点信息、流量倍率、用户组等级限制
 - 重启 Xray / Hysteria 2
 - 同步配置到节点
-- Ulzix 订单列表与节点绑定
+- 同一 SSH 地址和端口上的协议归入同一台机器
 - 节点 AI 标签（基于审计日志识别近期换 IP 等动作）
 
 ### 用户管理
@@ -40,16 +40,8 @@
 - 多节点并发使用观察
 - 节点健康汇总
 - Agent WebSocket 状态监控
-- 运维诊断与 AI 运营日记（Pоrпнub AI）
+- 运维诊断与 AI 运营日记（派蒙）
 - Agent 批量自更新
-
-### Ulzix
-
-- 使用 Secret `ULZIX_API_KEY` 为 Node 部署提供 FOSSBilling 客户 API Key
-- 订单列表、状态、到期时间与节点绑定
-- API Key 失效时提示重新配置
-- VPS 开关机、重装、换 IP 请到 Ulzix 控制台操作，未假定扩展接口
-- Workers 部署、备份和 Telegram 配置请参阅 [部署文档](./README-WORKERS.md)
 
 ### 设置
 

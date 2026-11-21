@@ -35,7 +35,7 @@ json_get() {
   fi
 }
 
-echo "========== 🍑 蜜桃酱巡检报告 =========="
+echo "========== 🍑 派蒙巡检报告 =========="
 echo "时间: $(TZ=Asia/Shanghai date '+%Y-%m-%d %H:%M:%S')"
 echo ""
 

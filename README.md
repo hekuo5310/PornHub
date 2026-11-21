@@ -6,7 +6,7 @@
 [![Node.js](https://img.shields.io/badge/Node.js-22%2B-green.svg)](https://nodejs.org)
 [![Express](https://img.shields.io/badge/Express-5-lightgrey.svg)](https://expressjs.com)
 
-基于 Node.js + Express + SQLite，把用户、节点、订阅、流量、运维放进一套系统。覆盖 VLESS Reality / Shadowsocks / Hysteria 2 三种协议，支持 Cloudflare Workers 部署、邮箱注册、Ulzix 订单与节点绑定、Telegram 互动游戏、自动化运维巡检。
+基于 Node.js + Express + SQLite，把用户、节点、订阅、流量、运维放进一套系统。覆盖 VLESS Reality / Shadowsocks / Hysteria 2 三种协议，支持 Cloudflare Workers 部署、邮箱注册、Telegram 互动游戏、自动化运维巡检。
 
 ## 功能
 
@@ -19,8 +19,7 @@
 - **健康监控**：Agent WebSocket 长连接 + xray/Hysteria 存活检测 + 资源用量
 
 ### 自动化
-- **Ulzix 集成**：FOSSBilling Client API、客户 API Key、订单列表、节点绑定
-- **被墙检测**：Agent 连通性检测与通知；Ulzix 换 IP 需在其控制台操作
+- **被墙检测**：Agent 连通性检测与通知
 - **密钥轮换**：UUID/订阅 Token 按用户组配置周期重置
 - **不活跃冻结**：TG 30 天未签到自动冻结，签到一次自动解冻
 
@@ -39,7 +38,7 @@
 
 ## Cloudflare Workers 部署（推荐）
 
-请阅读 [Workers 部署与 Ulzix 配置](./README-WORKERS.md)。包含初始化管理员、客户 API Key、Agent、备份和 Telegram webhook 配置。
+请阅读 [Workers 部署与节点管理](./README-WORKERS.md)。包含初始化管理员、Agent、备份和 Telegram webhook 配置。
 
 ## 快速部署
 
@@ -102,7 +101,6 @@ src/
 ├── services/               # 业务逻辑
 │   ├── database.js         # SQLite + 迁移
 │   ├── deploy.js           # 节点部署
-│   ├── ulzix.js            # Ulzix FOSSBilling Client API
 │   ├── health.js           # 健康检查 + 流量上报
 │   ├── tgbot.js            # Telegram Bot
 │   ├── agent-ws.js         # Agent WebSocket
@@ -146,7 +144,6 @@ openclaw-ops/               # OpenClaw AI 运维 workspace（可选）
 - CSRF 双重防护（Origin + Token）
 - 登录限流 + 验证码次数限制
 - 密码使用 scrypt 哈希（参数范围限制防 DoS）
-- Ulzix Cookie 仅存服务端 Secret
 - 订阅链接 HMAC 签名（可选）
 - 多层 Rate Limiting（IP / Token / 行为）
 - Timing-safe 比较防时序攻击

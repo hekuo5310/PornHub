@@ -102,7 +102,7 @@ WebApp 通过 Telegram `initData` 验证（含过期检查）。
 | POST | `/ops/api/users/:id/unfreeze` | 解冻用户 |
 | POST | `/ops/api/backup` | 创建备份 |
 | POST | `/ops/api/agents/update-all` | 批量更新 Agent |
-| POST | `/ops/api/diary` | 写运营日记（Pоrпнub AI巡检用） |
+| POST | `/ops/api/diary` | 写运营日记（派蒙巡检用） |
 
 ## 管理 API
 
