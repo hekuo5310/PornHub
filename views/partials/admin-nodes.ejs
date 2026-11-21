@@ -4,7 +4,7 @@
   <div class="sm:hidden space-y-3">
     <% nodeMachines.forEach(function(machine) { %>
     <section class="glass rounded-2xl p-3 space-y-2" data-node-machine="<%= machine.key %>">
-      <h3 class="text-white text-sm font-medium break-all"><%= machine.nodes[0].name %> · <%= machine.key %></h3>
+      <h3 class="text-white text-sm font-medium break-all"><%= machine.label %></h3>
       <% machine.nodes.forEach(function(n) { %>
     <div class="glass rounded-2xl p-4 space-y-3" data-node-id="<%= n.id %>">
       <div class="flex items-center justify-between">
@@ -58,7 +58,7 @@
         <div><span class="text-gray-500">最后检测</span><span class="block text-gray-500 mt-0.5"><%= n.last_check || '-' %></span></div>
       </div>
       <div class="flex gap-2 pt-1 border-t border-white/5">
-        <md-filled-button data-id="<%= n.id %>" data-name="<%= n.name %>" data-host="<%= n.host %>" class="js-open-node-edit text-rose-400 hover:text-rose-300 text-xs">编辑</md-filled-button>
+        <md-filled-button data-id="<%= n.id %>" data-name="<%= n.name %>" data-host="<%= n.host %>" data-machine-id="<%= n.machine_id || '' %>" class="js-open-node-edit text-rose-400 hover:text-rose-300 text-xs">编辑</md-filled-button>
         <md-filled-button data-node-id="<%= n.id %>" class="js-restart-xray text-amber-400 hover:text-amber-300 text-xs">重启</md-filled-button>
         <form method="POST" action="/admin/api/nodes/<%= n.id %>/delete" class="inline">
           <input type="hidden" name="_csrf" value="<%= csrfToken %>">
@@ -84,7 +84,7 @@
         <% nodeMachines.forEach(function(machine) { %>
         <tbody class="text-gray-300" data-node-machine="<%= machine.key %>">
           <tr class="border-b border-white/5 bg-white/5">
-            <th scope="rowgroup" colspan="9" class="py-2 px-4 text-xs text-white"><%= machine.nodes[0].name %> · <%= machine.key %></th>
+            <th scope="rowgroup" colspan="9" class="py-2 px-4 text-xs text-white"><%= machine.label %></th>
           </tr>
           <% machine.nodes.forEach(function(n) { %>
           <tr class="border-b border-white/5 hover:bg-white/[0.02]" data-node-id="<%= n.id %>">
@@ -136,7 +136,7 @@
             </td>
             <td class="py-3 px-4 text-xs text-gray-500 hidden md:table-cell"><%= n.last_check || '-' %></td>
             <td class="py-3 px-4 space-x-2">
-              <md-filled-button data-id="<%= n.id %>" data-name="<%= n.name %>" data-host="<%= n.host %>" class="js-open-node-edit text-rose-400 hover:text-rose-300 text-xs">编辑</md-filled-button>
+              <md-filled-button data-id="<%= n.id %>" data-name="<%= n.name %>" data-host="<%= n.host %>" data-machine-id="<%= n.machine_id || '' %>" class="js-open-node-edit text-rose-400 hover:text-rose-300 text-xs">编辑</md-filled-button>
               <md-filled-button data-node-id="<%= n.id %>" class="js-restart-xray text-amber-400 hover:text-amber-300 text-xs">重启</md-filled-button>
               <form method="POST" action="/admin/api/nodes/<%= n.id %>/delete" class="inline">
                 <input type="hidden" name="_csrf" value="<%= csrfToken %>">
@@ -243,8 +243,13 @@
           <label class="text-xs text-gray-400">节点 IP</label>
           <input type="text" name="host" id="node-edit-host" required class="mt-1 w-full bg-black/30 text-white px-3 py-2 rounded-xl border border-white/10 text-sm">
         </div>
+        <label class="block text-xs text-gray-400">
+          机器标识
+          <input type="text" name="machine_id" id="node-edit-machine" maxlength="64" pattern="[a-zA-Z0-9][a-zA-Z0-9_\-]{0,63}" class="mt-1 w-full bg-black/30 text-white px-3 py-2 rounded-xl border border-white/10 text-sm" placeholder="例如 hk-01">
+          同一台机器填相同标识，支持不同 IP。留空按 SSH 地址和端口归组。
+        </label>
         <div>
-          <label class="text-xs text-gray-400">流量上限（TB，同机节点共享，0=不限）</label>
+          <label class="text-xs text-gray-400">流量上限（TB，同一 SSH 地址和端口共享，0=不限）</label>
           <div class="flex items-center gap-2 mt-1">
             <input type="number" name="cap_tb" id="node-edit-cap" min="0" step="0.1" value="0" class="flex-1 bg-black/30 text-white px-3 py-2 rounded-xl border border-white/10 text-sm">
             <span class="text-gray-500 text-xs">TB</span>
@@ -268,12 +273,13 @@
 </div>
 
 <script nonce="<%= nonce %>">
-function openNodeEditModal(id, name, host) {
+function openNodeEditModal(id, name, host, machineId) {
   const modal = document.getElementById('node-edit-modal');
   const form = document.getElementById('node-edit-form');
   document.getElementById('node-edit-id').value = id;
   document.getElementById('node-edit-name').value = name || '';
   document.getElementById('node-edit-host').value = host || '';
+  document.getElementById('node-edit-machine').value = machineId || '';
   document.getElementById('node-edit-cap').value = '0';
   document.getElementById('node-edit-rate').value = '1';
   form.action = '/admin/api/nodes/' + id + '/update-basic';
@@ -291,7 +297,7 @@ function openNodeEditModalFromBtn(btn) {
   const name = btn?.dataset?.name || '';
   const host = btn?.dataset?.host || '';
   if (!id) return;
-  openNodeEditModal(id, name, host);
+  openNodeEditModal(id, name, host, btn.dataset.machineId);
 }
 
 function closeNodeEditModal() {
@@ -465,7 +471,7 @@ document.getElementById('btn-save-traffic-cap')?.addEventListener('click', async
   const id = document.getElementById('node-edit-id').value;
   const cap_tb = document.getElementById('node-edit-cap').value;
   const res = await fetch('/admin/api/nodes/' + id + '/traffic-cap', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': window._csrf || '' }, body: JSON.stringify({ cap_tb }) });
-  toast(res.ok ? '流量上限已设置（同机节点已同步）' : '设置失败');
+  toast(res.ok ? '流量上限已设置（相同 SSH 连接地址的节点已同步）' : '设置失败');
 });
 
 </script>

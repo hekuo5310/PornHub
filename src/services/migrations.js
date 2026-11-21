@@ -43,6 +43,7 @@ function runMigrations(db) {
     db.exec(`DROP TABLE IF EXISTS ${retiredPurchasesTable}`);
     if (cols.includes(retiredOrderColumn)) db.exec(`ALTER TABLE nodes DROP COLUMN ${retiredOrderColumn}`);
   })();
+  if (!cols.includes('machine_id')) db.exec('ALTER TABLE nodes ADD COLUMN machine_id TEXT');
   if (!cols.includes('fixed_port')) db.exec('ALTER TABLE nodes ADD COLUMN fixed_port INTEGER NOT NULL DEFAULT 0');
   if (!cols.includes('socks5_host')) {
     db.exec(`

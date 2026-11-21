@@ -23,7 +23,7 @@ try {
   let r=await request('/auth/email-login',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({email:'admin@example.test',password:'Local123456'})});
   assert.equal(r.status,302); assert.equal(r.headers.get('location'),'/');
   cookie=r.headers.get('set-cookie')?.split(';')[0]; assert.ok(cookie);
-  r=await request('/admin'); const admin=await r.text(); assert.equal(r.status,200,admin.slice(0,500)); assert.match(admin,/派蒙/); assert.doesNotMatch(admin,/Ulzix/i);
+  r=await request('/admin'); const admin=await r.text(); assert.equal(r.status,200,admin.slice(0,500)); assert.match(admin,/派蒙/); assert.match(admin,/\/js\/theme\.js/); assert.doesNotMatch(admin,/Ulzix/i);
   csrf=admin.match(/window\._csrf\s*=\s*['"]([^'"]+)/)?.[1] || admin.match(/const csrfToken\s*=\s*['"]([^'"]+)/)?.[1]; assert.ok(csrf,'CSRF token');
   for(const route of ['/admin/api/users','/admin/api/users?search=admin','/admin/api/invite-relations','/admin/api/invite-relations?search=admin','/admin/api/logs?search=admin','/admin/api/sub-stats?search=admin']) {
     const result=await request(route); assert.equal(result.status,200,await result.clone().text());
@@ -41,10 +41,22 @@ try {
     'data-node-machine="203.0.113.10:22"','data-node-machine="203.0.113.11:22"',
     'data-node-machine="203.0.113.10:22"','data-node-machine="203.0.113.11:22"',
   ]);
+  r=await post('/admin/api/nodes/manual',{name:'Worker IPv6 endpoint',host:'2001:db8::10',port:443,protocol:'hy2',machine_id:'WORKER-01'});
+  assert.equal(r.status,200,await r.clone().text());
+  const ipv6NodeId=(await r.json()).id;
+  r=await post(`/admin/api/nodes/${nodeId}/update-basic`,{name:'Worker smoke node',host:'203.0.113.12',machine_id:'worker-01'});
+  assert.equal(r.status,302);
+  const groupedAdmin=await (await request('/admin')).text();
+  assert.equal([...groupedAdmin.matchAll(/data-node-machine="machine:worker-01"/g)].length,2);
+  assert.equal((await post(`/admin/api/nodes/${nodeId}/update-basic`,{name:'Worker smoke node',host:'203.0.113.12',machine_id:'invalid ID'})).status,400);
   r=await request(`/admin/api/nodes/${nodeId}/info`); assert.equal(r.status,200); const info=await r.json();
   r=await post('/admin/api/backups/create',{}); assert.equal(r.status,200,await r.clone().text()); const backup=(await r.json()).backup;
   r=await request('/admin/api/backups/download/'+backup); assert.equal(r.status,200); const snapshot=await r.json(); assert.equal(snapshot.format,'xiaoyizi-worker-v1');
   const node=snapshot.tables.nodes.find(n=>n.id===nodeId); assert.ok(node.agent_token,'Agent token');
+  assert.equal(node.host,'203.0.113.12');
+  const ipv6Node=snapshot.tables.nodes.find(n=>n.id===ipv6NodeId);
+  assert.equal(ipv6Node.host,'2001:db8::10');
+  assert.equal(ipv6Node.machine_id,node.machine_id);
   r=await request('/'); assert.equal(r.status,200,await r.clone().text());
   r=await request('/suball/'+snapshot.tables.users[0].sub_token,{headers:{'User-Agent':'clash-meta'}}); assert.equal(r.status,200,await r.clone().text());
   assert.ok((await r.text()).length,'Subscription');
