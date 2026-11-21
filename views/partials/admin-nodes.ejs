@@ -2,7 +2,10 @@
 <div class="tab-panel active space-y-4" data-tab="nodes">
   <!-- 移动端卡片布局 -->
   <div class="sm:hidden space-y-3">
-    <% nodes.forEach(function(n) { %>
+    <% nodeMachines.forEach(function(machine) { %>
+    <section class="glass rounded-2xl p-3 space-y-2" data-node-machine="<%= machine.key %>">
+      <h3 class="text-white text-sm font-medium break-all"><%= machine.nodes[0].name %> · <%= machine.key %></h3>
+      <% machine.nodes.forEach(function(n) { %>
     <div class="glass rounded-2xl p-4 space-y-3" data-node-id="<%= n.id %>">
       <div class="flex items-center justify-between">
         <span class="font-medium text-white text-sm"><%= n.name %></span>
@@ -31,7 +34,7 @@
         <div class="min-w-0"><span class="text-gray-500">地址</span>
           <code class="block text-gray-400 break-all mt-0.5 font-mono" style="font-size:10px" id="host-display-m-<%= n.id %>" title="<%= n.host %>"><%= n.host %></code>
         </div>
-        <div><span class="text-gray-500">端口</span><span class="block text-gray-300 mt-0.5"><%= n.port %></span></div>
+        <div><span class="text-gray-500">端口</span><span class="block text-gray-300 mt-0.5"><%= n.protocol === 'hy2' ? (n.hy2_port || n.port) : n.port %></span></div>
         <div><span class="text-gray-500">用户组</span>
           <select data-node-id="<%= n.id %>" class="js-node-level-select block mt-0.5 bg-black/30 text-white text-xs px-2 py-1 rounded-lg border border-white/10">
             <% USER_GROUPS.forEach(function(g, i) { %>
@@ -59,10 +62,12 @@
         <md-filled-button data-node-id="<%= n.id %>" class="js-restart-xray text-amber-400 hover:text-amber-300 text-xs">重启</md-filled-button>
         <form method="POST" action="/admin/api/nodes/<%= n.id %>/delete" class="inline">
           <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-          <md-filled-button type="button" class="js-delete-node-btn text-red-400 hover:text-red-300 text-xs">删除</md-filled-button>
+          <md-filled-button type="button" data-shared-machine="<%= machine.nodes.length > 1 %>" class="js-delete-node-btn text-red-400 hover:text-red-300 text-xs">删除</md-filled-button>
         </form>
       </div>
     </div>
+      <% }); %>
+    </section>
     <% }); %>
   </div>
 
@@ -72,18 +77,22 @@
       <table class="w-full text-sm text-left">
         <thead class="text-gray-500 border-b border-white/5 text-xs">
           <tr>
-            <th class="py-3 px-4">名称</th><th class="py-3 px-4">地址</th><th class="py-3 px-4">端口</th>
+            <th class="py-3 px-4">协议节点</th><th class="py-3 px-4">地址</th><th class="py-3 px-4">端口</th>
             <th class="py-3 px-4">用户组</th><th class="py-3 px-4">在线</th><th class="py-3 px-4">状态</th><th class="py-3 px-4">Agent</th><th class="py-3 px-4 hidden md:table-cell">最后检测</th><th class="py-3 px-4">操作</th>
           </tr>
         </thead>
-        <tbody class="text-gray-300">
-          <% nodes.forEach(function(n) { %>
+        <% nodeMachines.forEach(function(machine) { %>
+        <tbody class="text-gray-300" data-node-machine="<%= machine.key %>">
+          <tr class="border-b border-white/5 bg-white/5">
+            <th scope="rowgroup" colspan="9" class="py-2 px-4 text-xs text-white"><%= machine.nodes[0].name %> · <%= machine.key %></th>
+          </tr>
+          <% machine.nodes.forEach(function(n) { %>
           <tr class="border-b border-white/5 hover:bg-white/[0.02]" data-node-id="<%= n.id %>">
             <td class="py-3 px-4 font-medium text-white text-xs"><%= n.name %> <% if (n.protocol === 'ss') { %><span class="text-[10px] bg-cyan-800/60 text-cyan-300 px-1.5 py-0.5 rounded">SS</span><% } else if (n.protocol === 'hy2') { %><span class="text-[10px] bg-amber-800/60 text-amber-300 px-1.5 py-0.5 rounded">Hy2</span><% } else { %><span class="text-[10px] bg-indigo-800/60 text-indigo-300 px-1.5 py-0.5 rounded">VLESS</span><% } %></td>
             <td class="py-3 px-4">
               <code class="block text-xs text-gray-400 truncate font-mono" style="max-width:180px" id="host-display-<%= n.id %>" title="<%= n.host %>"><%= n.host %></code>
             </td>
-            <td class="py-3 px-4 text-xs"><%= n.port %></td>
+            <td class="py-3 px-4 text-xs"><%= n.protocol === 'hy2' ? (n.hy2_port || n.port) : n.port %></td>
             <td class="py-3 px-4">
               <select data-node-id="<%= n.id %>" class="js-node-level-select bg-black/30 text-white text-xs px-2 py-1 rounded-lg border border-white/10">
                 <% USER_GROUPS.forEach(function(g, i) { %>
@@ -131,12 +140,13 @@
               <md-filled-button data-node-id="<%= n.id %>" class="js-restart-xray text-amber-400 hover:text-amber-300 text-xs">重启</md-filled-button>
               <form method="POST" action="/admin/api/nodes/<%= n.id %>/delete" class="inline">
                 <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-                <md-filled-button type="button" class="js-delete-node-btn text-red-400 hover:text-red-300 text-xs">删除</md-filled-button>
+                <md-filled-button type="button" data-shared-machine="<%= machine.nodes.length > 1 %>" class="js-delete-node-btn text-red-400 hover:text-red-300 text-xs">删除</md-filled-button>
               </form>
             </td>
           </tr>
           <% }); %>
         </tbody>
+        <% }); %>
       </table>
     </div>
   </div>
@@ -144,11 +154,9 @@
   <!-- 一键部署 -->
   <details class="glass rounded-2xl">
     <summary class="text-rose-400 text-sm cursor-pointer hover:text-rose-300 p-4"> 一键部署节点</summary>
-    <p class="px-4 pb-3 text-gray-400 text-xs">支持 Debian/Ubuntu（systemd）及 Alpine（OpenRC，x86_64/aarch64）。Ulzix NAT 请核实 SSH 映射地址、端口，并确保套餐有足够内存和磁盘。</p>
-    <div id="ulzix-deploy-list" class="px-4 pb-3 space-y-2 text-sm text-gray-300" aria-live="polite"></div>
+    <p class="px-4 pb-3 text-gray-400 text-xs">支持 Debian/Ubuntu（systemd）及 Alpine（OpenRC，x86_64/aarch64）。请填写服务器的 SSH 地址和端口。</p>
     <form id="smart-deploy-form" method="POST" action="/admin/api/nodes/deploy-smart" class="px-4 pb-4 grid grid-cols-2 gap-3">
       <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-      <label class="col-span-2 text-gray-300 text-sm">Ulzix 订单（选填，可从上方列表选择）<input type="number" min="1" name="ulzix_order_id" class="bg-black/30 text-white px-3 py-2 rounded-xl border border-white/10 text-sm w-full"></label>
       <input type="text" name="host" placeholder="服务器 IP *" required class="bg-black/30 text-white px-3 py-2 rounded-xl border border-white/10 text-sm">
       <input type="password" name="ssh_password" placeholder="SSH 密码 *" required minlength="1" class="bg-black/30 text-white px-3 py-2 rounded-xl border border-white/10 text-sm">
       <input type="number" name="ssh_port" placeholder="SSH 端口（默认 22）" min="1" max="65535" class="bg-black/30 text-white px-3 py-2 rounded-xl border border-white/10 text-sm">
@@ -424,7 +432,10 @@ document.querySelectorAll('.js-restart-xray').forEach((btn) => {
 
 document.querySelectorAll('.js-delete-node-btn').forEach((btn) => {
   btn.addEventListener('click', async function onDeleteNode() {
-    const ok = await _confirm('确定删除？将停止远端 Xray 和 Agent 服务');
+    const message = this.dataset.sharedMachine === 'true'
+      ? '确定移除该协议记录？请手动管理远端服务。如果 Agent 使用这条记录的凭据，需要重新绑定。'
+      : '确定删除？将停止远端代理和 Agent 服务。';
+    const ok = await _confirm(message);
     if (ok) this.closest('form')?.submit();
   });
 });

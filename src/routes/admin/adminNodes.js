@@ -6,6 +6,7 @@ const logger = require('../../services/logger');
 const { emitSyncNode } = require('../../services/configEvents');
 const { parseIntId, isValidHost } = require('../../utils/validators');
 const { asyncHandler } = require('../../utils/asyncHandler');
+const { machineKey } = require('../../utils/nodeMachine');
 
 const { randomPort } = require('../../utils/vless');
 
@@ -72,19 +73,7 @@ router.post('/nodes/deploy-smart', asyncHandler(async (req, res) => {
     reserve(protocol, port);
   }
 
-  let ulzixOrderId=null;
-  if(req.body.ulzix_order_id) {
-    ulzixOrderId=parseIntId(req.body.ulzix_order_id);
-    if(!ulzixOrderId) return res.redirect('/admin?msg=invalid_order#nodes');
-    try {
-      const {UlzixClient}=require('../../services/ulzix');
-      const order=await new UlzixClient(await require('../../services/ulzixSettings').read()).call('order/get',{id:ulzixOrderId});
-      if(Number(order?.id)!==ulzixOrderId || order.status!=='active') return res.redirect('/admin?msg=ulzix_not_active#nodes');
-    } catch {return res.redirect('/admin?msg=ulzix_verify_failed#nodes');}
-  }
-
   const sshInfo = {
-    ulzix_order_id:ulzixOrderId,
     ports, fixedPorts,
     host, ssh_port: parseInt(ssh_port) || 22, ssh_user: ssh_user || 'root', ssh_password,
     ss_method: ss_method || 'aes-256-gcm',
@@ -191,6 +180,13 @@ router.post('/nodes/:id/delete', (req, res) => {
   const node = db.getNodeById(id);
   if (!node) return res.redirect('/admin#nodes');
 
+  const hasPeers = db.getAllNodes().some(peer => peer.id !== id && machineKey(peer) === machineKey(node));
+  if (hasPeers) {
+    db.deleteNode(node.id);
+    require('../../services/health').cleanupNodeState(node.id);
+    db.addAuditLog(req.user.id, 'node_delete', `移除协议记录（同机服务由管理员维护）: ${node.name}`, req.clientIp || req.ip);
+    return res.redirect('/admin#nodes');
+  }
   const stopCmd = require('../../utils/serviceCommands').stopServices();
 
   (async () => {
@@ -243,7 +239,6 @@ function updateNodeBasicInfo(req, res) {
   const node = db.getNodeById(id);
   if (node) {
     const oldHost = node.host;
-    const oldSshHost = node.ssh_host;
     const oldName = node.name;
     db.updateNode(node.id, { name: trimmedName, host: trimmedHost, ssh_host: trimmedHost });
     const rate = parseFloat(req.body.traffic_rate);
@@ -252,7 +247,7 @@ function updateNodeBasicInfo(req, res) {
 
     // 同步同机 peer 节点的 ssh_host（如双协议 VLESS+SS 部署在同一台机器）
     const allNodes = db.getAllNodes();
-    const peerNodes = allNodes.filter(n => n.id !== node.id && (n.ssh_host === oldSshHost || n.ssh_host === oldHost));
+    const peerNodes = allNodes.filter(n => n.id !== node.id && machineKey(n) === machineKey(node));
     for (const peer of peerNodes) {
       const updates = { ssh_host: trimmedHost };
       // 非 IPv6 节点的 host 也一并更新
@@ -291,8 +286,7 @@ router.post('/nodes/:id/traffic-cap', (req, res) => {
   // 同机节点同步
   const node = db.getNodeById(id);
   if (node) {
-    const sshHost = node.ssh_host || node.host;
-    db.getAllNodes().filter(n => n.id !== id && (n.ssh_host || n.host) === sshHost).forEach(n => db.updateNode(n.id, { traffic_cap: cap }));
+    db.getAllNodes().filter(n => n.id !== id && machineKey(n) === machineKey(node)).forEach(n => db.updateNode(n.id, { traffic_cap: cap }));
   }
   db.addAuditLog(req.user.id, 'node_traffic_cap', `设置流量上限: ${node?.name} → ${req.body.cap_tb || 0} TB`, req.clientIp || req.ip);
   res.json({ ok: true });

@@ -1070,7 +1070,7 @@ function checkZeroTrafficNodes() {
     bufferSystemAuditLog('node_zero_traffic', `${node.name}: 24小时零流量，疑似被墙`);
 
     {
-      notify.ops(`<b>疑似被墙（24h零流量）</b>\n节点: ${node.name}\n请在 Ulzix 控制台检查实例与网络`);
+      notify.ops(`<b>疑似被墙（24h零流量）</b>\n节点: ${node.name}\n请手动检查服务器与网络`);
     }
   }
 }

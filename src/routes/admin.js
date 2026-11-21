@@ -6,6 +6,8 @@ const agentWs = require('../services/agent-ws');
 const { buildOnlineAgentSet } = require('../utils/agentMap');
 const { USER_GROUPS } = require('../utils/userGroup');
 
+const { groupNodesByMachine } = require('../utils/nodeMachine');
+
 const router = express.Router();
 router.use(requireAuth, requireAdmin);
 
@@ -29,6 +31,7 @@ router.get('/', (req, res) => {
   res.render('admin', {
     users: [],
     nodes: allNodes,
+    nodeMachines: groupNodesByMachine(allNodes),
     onlineAgents,
     nodeOnlineCount,
     logs: { rows: [], total: 0 },

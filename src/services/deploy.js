@@ -554,7 +554,6 @@ async function deployNode(sshInfo, db) {
   const region = displayGeo.cityCN;
   const { name, result } = insertNodeWithGeneratedName(db, (generatedName) => ({
     name: generatedName, host: sshInfo.host, port, uuid,
-    ulzix_order_id: sshInfo.ulzix_order_id || null,
     fixed_port: sshInfo.fixedPorts?.vless,
     ssh_host: sshInfo.host,
     ssh_port: sshInfo.ssh_port || 22,
@@ -853,7 +852,6 @@ async function deploySsNode(sshInfo, db) {
   const { name, result } = insertNodeWithGeneratedName(db, (generatedName) => ({
     name: generatedName, host: sshInfo.host, port, uuid: '00000000-0000-0000-0000-000000000000',
     protocol: 'ss', ip_version: 6, ss_method: ssMethod, ss_password: ssPassword,
-    ulzix_order_id: sshInfo.ulzix_order_id || null,
     fixed_port: sshInfo.fixedPorts?.ss,
     ssh_host: sshInfo.host,
     ssh_port: sshInfo.ssh_port || 22,
@@ -971,7 +969,6 @@ async function deployDualNode(sshInfo, db) {
     (generatedName) => ({
       name: generatedName, host: sshInfo.host, port: vlessPort, uuid,
       protocol: 'vless', ip_version: 4,
-      ulzix_order_id: sshInfo.ulzix_order_id || null,
       fixed_port: sshInfo.fixedPorts?.vless,
       ssh_host: sshInfo.host, ssh_port: sshInfo.ssh_port || 22,
       ssh_user: sshInfo.ssh_user || 'root', ssh_password: sshInfo.ssh_password,
@@ -984,7 +981,6 @@ async function deployDualNode(sshInfo, db) {
       name: generatedName, host: sshInfo.host, port: ssPort,
       uuid: '00000000-0000-0000-0000-000000000000',
       protocol: 'ss', ip_version: 6, ss_method: ssMethod, ss_password: ssPassword,
-      ulzix_order_id: sshInfo.ulzix_order_id || null,
       fixed_port: sshInfo.fixedPorts?.ss,
       ssh_host: sshInfo.host, ssh_port: sshInfo.ssh_port || 22,
       ssh_user: sshInfo.ssh_user || 'root', ssh_password: sshInfo.ssh_password,
@@ -1190,7 +1186,6 @@ async function deployHy2Node(sshInfo, db) {
     hy2_up_mbps: parseInt(sshInfo.hy2_up_mbps) || 100,
     hy2_down_mbps: parseInt(sshInfo.hy2_down_mbps) || 100,
     hy2_stats_secret: statsSecret,
-    ulzix_order_id: sshInfo.ulzix_order_id || null,
     fixed_port: sshInfo.fixedPorts?.hy2,
     ssh_host: sshInfo.host,
     ssh_port: sshInfo.ssh_port || 22,

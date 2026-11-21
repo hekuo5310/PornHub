@@ -24,7 +24,6 @@ function safeNode(n, extra) {
     is_active: n.is_active, region: n.region, remark: n.remark,
     min_level: n.min_level, group_name: n.group_name, tags: n.tags,
     ip_version: n.ip_version, is_manual: n.is_manual, fail_count: n.fail_count,
-    ulzix_order_id: n.ulzix_order_id,
     agent_last_report: n.agent_last_report,
     last_check: n.last_check, last_rotated: n.last_rotated, created_at: n.created_at,
     ...extra,
@@ -223,7 +222,7 @@ router.post('/nodes/:id/swap-ip', async (req, res) => {
     const node = db.getNodeById(id);
     if (!node) return res.status(404).json({ error: '节点不存在' });
 
-    return res.status(501).json({success:false,error:'Ulzix 的 VPS 换 IP 扩展 API 尚未核实，请在 Ulzix 控制台操作'});
+    return res.status(501).json({success:false,error:'请手动更换服务器 IP，再到管理后台更新节点地址'});
   } catch (err) {
     logger.error({ err }, 'OPS API swap-ip 失败');
     res.status(500).json({ error: 'Internal server error' });
