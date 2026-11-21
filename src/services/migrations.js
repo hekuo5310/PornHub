@@ -5,6 +5,10 @@
 const { v4: uuidv4 } = require('uuid');
 const logger = require('./logger');
 
+// Used only to remove retired integration data and read old snapshots.
+const retiredOrderColumn = 'ulzix_order_id';
+const retiredPurchasesTable = 'ulzix_purchases';
+
 function normalizeDuplicateNodeNames(db) {
   const rows = db.prepare('SELECT id, name FROM nodes ORDER BY name, created_at, id').all();
   const usedNames = new Set();
@@ -35,6 +39,10 @@ function normalizeDuplicateNodeNames(db) {
 function runMigrations(db) {
   // ─── nodes 表迁移 ───
   const cols = db.prepare("PRAGMA table_info(nodes)").all().map(c => c.name);
+  db.transaction(() => {
+    db.exec(`DROP TABLE IF EXISTS ${retiredPurchasesTable}`);
+    if (cols.includes(retiredOrderColumn)) db.exec(`ALTER TABLE nodes DROP COLUMN ${retiredOrderColumn}`);
+  })();
   if (!cols.includes('fixed_port')) db.exec('ALTER TABLE nodes ADD COLUMN fixed_port INTEGER NOT NULL DEFAULT 0');
   if (!cols.includes('socks5_host')) {
     db.exec(`
@@ -220,4 +228,4 @@ function runMigrations(db) {
   } catch (err) { logger.debug({ err }, '初始化 traffic_site_total 失败'); }
 }
 
-module.exports = { runMigrations };
+module.exports = { runMigrations, retiredOrderColumn, retiredPurchasesTable };

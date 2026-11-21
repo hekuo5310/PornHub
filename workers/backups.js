@@ -1,4 +1,5 @@
 const {getDb}=require('../src/services/database');
+const {retiredOrderColumn,retiredPurchasesTable}=require('../src/services/migrations');
 /** An operator-correctable backup size, lookup, or validation failure. */
 class BackupError extends Error {}
 const MAX_SIZE=8*1024*1024, CHUNK_SIZE=64000;
@@ -53,6 +54,13 @@ function restoreBackup(name) {
   try { snapshot=JSON.parse(data); } catch { throw new BackupError('无效备份格式'); }
   if(!snapshot || snapshot.format!=='xiaoyizi-worker-v1') throw new BackupError('无效备份格式');
   if(!snapshot.tables || typeof snapshot.tables!=='object' || Array.isArray(snapshot.tables)) throw new BackupError('备份数据结构无效');
+  // Discard retired integration data in pre-upgrade snapshots before schema validation.
+  delete snapshot.tables[retiredPurchasesTable];
+  if (Array.isArray(snapshot.tables.nodes)) {
+    for (const node of snapshot.tables.nodes) {
+      if (node && typeof node === 'object') delete node[retiredOrderColumn];
+    }
+  }
   const db=getDb(), allowed=tables();
   for(const [table,rows] of Object.entries(snapshot.tables)) if(!allowed.includes(table) || !Array.isArray(rows)) throw new BackupError('备份数据结构无效');
   const safetyBackup=createBackup();
