@@ -6,7 +6,7 @@ const logger = require('../../services/logger');
 const { emitSyncNode } = require('../../services/configEvents');
 const { parseIntId, isValidHost } = require('../../utils/validators');
 const { asyncHandler } = require('../../utils/asyncHandler');
-const { machineKey } = require('../../utils/nodeMachine');
+const { machineKey, sshEndpointKey } = require('../../utils/nodeMachine');
 
 const { randomPort } = require('../../utils/vless');
 
@@ -221,7 +221,15 @@ router.post('/nodes/:id/delete', (req, res) => {
   res.redirect('/admin#nodes');
 });
 
-function updateNodeBasicInfo(req, res) {
+/** Normalize a manually assigned machine ID used across protocol addresses. */
+function parseMachineId(value) {
+  if (value === undefined) return undefined;
+  const id = typeof value === 'string' ? value.trim().toLowerCase() : null;
+  if (id === '' || /^[a-z0-9][a-z0-9_-]{0,63}$/.test(id ?? '')) return id || null;
+  throw new Error('机器标识只支持 1–64 位英文字母、数字、连字符或下划线，首位须为字母或数字');
+}
+
+function updateNodeBasicInfo(req, res, updateSsh = false) {
   const { host, name } = req.body;
   const id = parseIntId(req.params.id);
   if (!id) return res.status(400).json({ error: '参数错误' });
@@ -230,6 +238,9 @@ function updateNodeBasicInfo(req, res) {
   const trimmedName = String(name || '').trim();
   if (!trimmedHost || !isValidHost(trimmedHost)) return res.status(400).json({ error: 'host 格式非法' });
   if (!trimmedName) return res.status(400).json({ error: '节点名称不能为空' });
+  let machineId;
+  try { machineId = parseMachineId(req.body.machine_id); }
+  catch (error) { return res.status(400).json({ error: error.message }); }
   const duplicate = findDuplicateNodeName(trimmedName, id);
   if (duplicate) {
     db.addAuditLog(req.user.id, 'node_update_name_dup', `重复节点名称: ${trimmedName} (节点#${duplicate.id})`, req.clientIp || req.ip);
@@ -240,14 +251,18 @@ function updateNodeBasicInfo(req, res) {
   if (node) {
     const oldHost = node.host;
     const oldName = node.name;
-    db.updateNode(node.id, { name: trimmedName, host: trimmedHost, ssh_host: trimmedHost });
+    const updates = { name: trimmedName, host: trimmedHost };
+    if (machineId !== undefined) updates.machine_id = machineId;
+    if (updateSsh) updates.ssh_host = trimmedHost;
+    db.updateNode(node.id, updates);
     const rate = parseFloat(req.body.traffic_rate);
     if (!isNaN(rate) && rate >= 0) db.updateNode(node.id, { traffic_rate: rate });
     db.addAuditLog(req.user.id, 'node_update_basic', `节点更新: ${oldName}(${oldHost}) → ${trimmedName}(${trimmedHost})`, req.clientIp || req.ip);
 
-    // 同步同机 peer 节点的 ssh_host（如双协议 VLESS+SS 部署在同一台机器）
+    if (!updateSsh) return res.redirect('/admin#nodes');
+    // 旧地址更新入口保留同步 SSH 地址的行为。
     const allNodes = db.getAllNodes();
-    const peerNodes = allNodes.filter(n => n.id !== node.id && machineKey(n) === machineKey(node));
+    const peerNodes = allNodes.filter(n => n.id !== node.id && sshEndpointKey(n) === sshEndpointKey(node));
     for (const peer of peerNodes) {
       const updates = { ssh_host: trimmedHost };
       // 非 IPv6 节点的 host 也一并更新
@@ -261,9 +276,9 @@ function updateNodeBasicInfo(req, res) {
   res.redirect('/admin#nodes');
 }
 
-router.post('/nodes/:id/update-basic', updateNodeBasicInfo);
+router.post('/nodes/:id/update-basic', (req, res) => updateNodeBasicInfo(req, res));
 // 兼容旧入口
-router.post('/nodes/:id/update-host', updateNodeBasicInfo);
+router.post('/nodes/:id/update-host', (req, res) => updateNodeBasicInfo(req, res, true));
 
 router.get('/nodes/:id/info', (req, res) => {
   const id = parseIntId(req.params.id);
@@ -286,7 +301,7 @@ router.post('/nodes/:id/traffic-cap', (req, res) => {
   // 同机节点同步
   const node = db.getNodeById(id);
   if (node) {
-    db.getAllNodes().filter(n => n.id !== id && machineKey(n) === machineKey(node)).forEach(n => db.updateNode(n.id, { traffic_cap: cap }));
+    db.getAllNodes().filter(n => n.id !== id && sshEndpointKey(n) === sshEndpointKey(node)).forEach(n => db.updateNode(n.id, { traffic_cap: cap }));
   }
   db.addAuditLog(req.user.id, 'node_traffic_cap', `设置流量上限: ${node?.name} → ${req.body.cap_tb || 0} TB`, req.clientIp || req.ip);
   res.json({ ok: true });
@@ -363,12 +378,17 @@ router.post('/nodes/manual', (req, res) => {
   const p = parseInt(port);
   if (!p || p < 1 || p > 65535) return res.status(400).json({ error: '端口无效' });
 
+  let machineId;
+  try { machineId = parseMachineId(req.body.machine_id); }
+  catch (error) { return res.status(400).json({ error: error.message }); }
+
   const proto = protocol === 'ss' ? 'ss' : protocol === 'hy2' ? 'hy2' : 'vless';
   const ipv = parseInt(ip_version) === 6 ? 6 : 4;
 
   const { v4: uuidv4 } = require('uuid');
   const nodeData = {
     name: trimmedName,
+    machine_id: machineId,
     host: host.trim(),
     port: p,
     uuid: uuidv4(), // SS 不用但字段 NOT NULL
